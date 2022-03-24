@@ -1,0 +1,38 @@
+{
+  "name": "tr-cli",
+  "version": "0.0.9",
+  "description": "trimmer前端脚手架",
+  "main": "src/index.js",
+  "bin": {
+    "tr-cli": "bin/tr"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "node scripts/release.js"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "author": "trimmer.yang",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^8.3.0",
+    "ejs": "^3.1.6",
+    "envinfo": "^7.8.1",
+    "execa": "^5.1.1",
+    "fs-extra": "^10.0.0",
+    "inquirer": "^8.1.2",
+    "leven": "^3.1.0",
+    "listr": "^0.14.3",
+    "lodash": "^4.17.21",
+    "minimist": "^1.2.5",
+    "ncp": "^2.0.0",
+    "pkg-install": "^1.0.0",
+    "prettier": "^2.5.0",
+    "semver": "^7.3.5"
+  }
+}

@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: <%=projectName%>-test-svc
+spec:
+  selector:
+    app: <%=projectName%>-test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

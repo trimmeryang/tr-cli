@@ -1,0 +1,227 @@
+stages:
+  - install
+  - build
+  - package
+  - test
+  - deploy
+variables:
+  APP_NAME: <%=projectName%>
+  CONTAINER_IMAGE: hub.intra.mlamp.cn/miaozhen-frontend/<%=projectName%>
+  FF_USE_FASTZIP: 'true'
+install_packages:
+  stage: install
+  image: hub.intra.mlamp.cn/miaozhen-frontend/node:v16.13.0
+  tags:
+    - nb
+  only:
+    - test
+    - tags
+    - develop
+  script:
+    - yarn install
+  cache:
+    key: ${CI_COMMIT_REF_NAME}_NPM_CACHE
+    untracked: true
+    paths:
+      - node_modules
+
+build_dev:
+  stage: build
+  image: hub.intra.mlamp.cn/miaozhen-frontend/node:v16.13.0
+  tags:
+    - nb
+  only:
+    - develop
+  artifacts:
+    name: ui_build_dev
+    untracked: false
+    expire_in: 30 mins
+    paths:
+      - $CI_PROJECT_DIR/dist
+  cache:
+    policy: pull
+    key: ${CI_COMMIT_REF_NAME}_NPM_CACHE
+    untracked: true
+    paths:
+      - node_modules
+  script:
+    - yarn build:dev
+package_dev:
+  stage: package
+  image:
+    name: hub.intra.mlamp.cn/miaozhen-frontend/kaniko:debugv1.0
+    entrypoint:
+      - ''
+  tags:
+    - nb
+  only:
+    - develop
+  dependencies:
+    - build_dev
+  script:
+    - >-
+      /kaniko/executor --context "${CI_PROJECT_DIR}" --dockerfile
+      "${CI_PROJECT_DIR}/Dockerfile" --build-arg DEPLOY_ENV=dev --destination "$CONTAINER_IMAGE:dev"
+deploy_dev:
+  stage: deploy
+  image: hub.intra.mlamp.cn/library/cli:v0.0.3
+  dependencies: []
+  cache: {}
+  tags:
+    - nb
+  only:
+    - develop
+  before_script:
+    - TAG="dev"
+    - shopt -s expand_aliases
+    - >-
+      alias k="kubectl -n omi1-frontend-test
+      --server=\"https://k8s.tsh.intra.mlamp.cn:8443\"
+      --token=\"$CI_K8S_TEST_TOKEN\" --insecure-skip-tls-verify"
+  script:
+    - DEPLOYMENT=`cat "./deploy/k8s/$TAG/deployment.yml"`
+    - SERVICE=`cat "./deploy/k8s/$TAG/service.yml"`
+    - DEPLOYMENT_NAME="$APP_NAME-$TAG-deployment"
+    - SERVICE_NAME="$APP_NAME-$TAG-svc"
+    - >-
+      k get deployment $DEPLOYMENT_NAME 2>/dev/null || echo "$DEPLOYMENT" | k
+      apply -f -
+    - >-
+      k patch deployment $DEPLOYMENT_NAME -p
+      "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"date\":\"`date
+      +'%s'`\"}}}}}"
+    - k get service $SERVICE_NAME 2>/dev/null || echo "$SERVICE" | k apply -f -
+
+build_test:
+  stage: build
+  image: hub.intra.mlamp.cn/miaozhen-frontend/node:v16.13.0
+  tags:
+    - nb
+  only:
+    - test
+  artifacts:
+    name: ui_build_test
+    untracked: false
+    expire_in: 30 mins
+    paths:
+      - $CI_PROJECT_DIR/dist
+  cache:
+    policy: pull
+    key: ${CI_COMMIT_REF_NAME}_NPM_CACHE
+    untracked: true
+    paths:
+      - node_modules
+  script:
+    - yarn build:test
+package_test:
+  stage: package
+  image:
+    name: hub.intra.mlamp.cn/miaozhen-frontend/kaniko:debugv1.0
+    entrypoint:
+      - ''
+  tags:
+    - nb
+  only:
+    - test
+  dependencies:
+    - build_test
+  script:
+    - >-
+      /kaniko/executor --context "${CI_PROJECT_DIR}" --dockerfile
+      "${CI_PROJECT_DIR}/Dockerfile" --build-arg DEPLOY_ENV=test --destination "$CONTAINER_IMAGE:test"
+deploy_test:
+  stage: deploy
+  image: hub.intra.mlamp.cn/library/cli:v0.0.3
+  dependencies: []
+  cache: {}
+  tags:
+    - nb
+  only:
+    - test
+  before_script:
+    - TAG="test"
+    - shopt -s expand_aliases
+    - >-
+      alias k="kubectl -n omi1-frontend-test
+      --server=\"https://k8s.tsh.intra.mlamp.cn:8443\"
+      --token=\"$CI_K8S_TEST_TOKEN\" --insecure-skip-tls-verify"
+  script:
+    - DEPLOYMENT=`cat "./deploy/k8s/$TAG/deployment.yml"`
+    - SERVICE=`cat "./deploy/k8s/$TAG/service.yml"`
+    - DEPLOYMENT_NAME="$APP_NAME-$TAG-deployment"
+    - SERVICE_NAME="$APP_NAME-$TAG-svc"
+    - >-
+      k get deployment $DEPLOYMENT_NAME 2>/dev/null || echo "$DEPLOYMENT" | k
+      apply -f -
+    - >-
+      k patch deployment $DEPLOYMENT_NAME -p
+      "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"date\":\"`date
+      +'%s'`\"}}}}}"
+    - k get service $SERVICE_NAME 2>/dev/null || echo "$SERVICE" | k apply -f -
+build_prod:
+  stage: build
+  image: hub.intra.mlamp.cn/miaozhen-frontend/node:v16.13.0
+  tags:
+    - nb
+  only:
+    - tags
+  artifacts:
+    name: ui_build_prod
+    untracked: false
+    expire_in: 30 mins
+    paths:
+      - $CI_PROJECT_DIR/dist
+  cache:
+    policy: pull
+    key: ${CI_COMMIT_REF_NAME}_NPM_CACHE
+    untracked: true
+    paths:
+      - node_modules
+  script:
+    - yarn build:prod
+package_prod:
+  stage: package
+  image:
+    name: hub.intra.mlamp.cn/miaozhen-frontend/kaniko:debugv1.0
+    entrypoint:
+      - ''
+  tags:
+    - nb
+  only:
+    - tags
+  dependencies:
+    - build_prod
+  cache: {}
+  script:
+    - >-
+      /kaniko/executor --context "${CI_PROJECT_DIR}" --dockerfile
+      "${CI_PROJECT_DIR}/Dockerfile" --build-arg DEPLOY_ENV=prod --destination
+      "$CONTAINER_IMAGE:$CI_COMMIT_TAG"
+deploy_prod:
+  stage: deploy
+  image: hub.intra.mlamp.cn/library/cli:v0.0.3
+  dependencies: []
+  cache: {}
+  when: manual
+  tags:
+    - nb
+  only:
+    - tags
+  before_script:
+    - TAG="prod"
+    - shopt -s expand_aliases
+    - >-
+      alias k="kubectl -n tr-frontend
+      --server=\"https://k8s.nb.intra.mlamp.cn:8443\"
+      --token=\"$CI_K8S_PROD_TOKEN\" --insecure-skip-tls-verify"
+  script:
+    - DEPLOYMENT=`cat "./deploy/k8s/$TAG/deployment.yml"`
+    - SERVICE=`cat "./deploy/k8s/$TAG/service.yml"`
+    - DEPLOYMENT_NAME="$APP_NAME-$TAG-deployment"
+    - SERVICE_NAME="$APP_NAME-$TAG-svc"
+    - >-
+      k get deployment $DEPLOYMENT_NAME 2>/dev/null || echo "$DEPLOYMENT" | k
+      apply -f -
+    - k set image deployment/$DEPLOYMENT_NAME $APP_NAME-$TAG=$CONTAINER_IMAGE:$CI_COMMIT_TAG --record
+    - k get service $SERVICE_NAME 2>/dev/null || echo "$SERVICE" | k apply -f -
+

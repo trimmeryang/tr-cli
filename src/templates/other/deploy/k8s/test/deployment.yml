@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: <%=projectName%>-test
+  name: <%=projectName%>-test-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: <%=projectName%>-test
+  template:
+    metadata:
+      labels:
+        app: <%=projectName%>-test
+    spec:
+      containers:
+        - image: hub.intra.mlamp.cn/miaozhen-frontend/<%=projectName%>:test
+          imagePullPolicy: Always
+          name: <%=projectName%>-test
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 400m
+              memory: 600M
+            requests:
+              cpu: 200m
+              memory: 300M
+      imagePullSecrets:
+        - name: tr-robot
