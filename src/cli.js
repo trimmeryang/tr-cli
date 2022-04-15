@@ -83,6 +83,17 @@ program
   });
 
 program
+  .command('block')
+  .alias('b')
+  .option('-login, --login', '登陆区块仓库')
+  .option('-publish, --publish', '发布区块')
+  .option('-install, --install', '安装区块')
+  .description('操作区块')
+  .action((options) => {
+    require('./block')(options);
+  });
+
+program
   .command('info')
   .description('打印你的系统信息')
   .action((cmd) => {
