@@ -128,7 +128,7 @@ program.on('--help', () => {
   console.log();
   console.log(chalk.green('欢迎使用tr-cli'));
   console.log();
-  console.log(chalk.green('如有问题，请联系yanghuan.a@miaozhen.com'));
+  console.log(chalk.green('如有问题，请联系615105880@qq.com'));
 });
 
 module.exports = async () => {
