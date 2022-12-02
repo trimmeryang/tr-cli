@@ -40,6 +40,7 @@ export default function TrConfig(config: any) {
             basePath: '/'
         },
 
+        chunks: ['common', 'echarts', 'vendors', 'umi'],
         chainWebpack(config: any, args: any) {
             if (!isDev) {
                 config.devtool = false;
@@ -59,22 +60,30 @@ export default function TrConfig(config: any) {
 
             config.merge({
                 optimization: {
-                    minimize: false,
                     splitChunks: {
-                        chunks: 'all',
+                        chunks: 'initial',
                         minSize: 30000,
-                        minChunks: 3,
+                        minChunks: 1,
                         automaticNameDelimiter: '.',
                         cacheGroups: {
-                            react: {
-                                name: 'react',
-                                priority: 20,
-                                test: /[\\/]node_modules[\\/](react|react-dom|react-dom-router)[\\/]/
+                            common: {
+                                name: 'common',
+                                chunks: 'all',
+                                test: /[\\/]node_modules[\\/](react|react-dom|dva).*$/,
+                                priority: 10
                             },
-                            antd: {
-                                name: 'antd',
-                                priority: 20,
-                                test: /[\\/]node_modules[\\/](antd|@ant-design\/icons)[\\/]/
+                            echarts: {
+                                name: 'echarts',
+                                chunks: 'all',
+                                test: /[\\/]node_modules[\\/]echarts[\\/]/,
+                                priority: 10
+                            },
+                            vendors: {
+                                name: 'vendors',
+                                chunks: 'initial',
+                                minChunks: 1,
+                                test: /[\\/]node_modules[\\/](?!react|react-dom|dva|echarts).*$/,
+                                priority: 10
                             }
                         }
                     }

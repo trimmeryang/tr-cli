@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Input } from 'antd';
-import './<%=fileName%>.less';
+import styles from './<%=fileName%>.less';
 
 interface <%=className%>Props {}
 
